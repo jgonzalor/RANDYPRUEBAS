@@ -1,5 +1,11 @@
 # Changelog
 
+## V2.1.5
+
+- Hotfix del mapa: corrige `ValueError` al incorporar listas/detalles de casillas dentro de las métricas GeoJSON.
+- El constructor cartográfico ahora serializa de forma segura valores escalares, listas y diccionarios.
+- Agregada prueba de regresión específica para el desglose de casillas dentro del mapa.
+
 ## V2.1.4
 
 - Ficha lateral del mapa rediseñada para una lectura más ejecutiva y agradable.

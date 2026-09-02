@@ -31,3 +31,24 @@ def test_geojson_filter_and_metrics():
     p=obj["features"][0]["properties"]
     assert p["seccion"]==316
     assert p["promovidos"]==12
+
+
+def test_geojson_accepts_complex_operational_properties():
+    metrics=pd.DataFrame([{
+        "numero":316,
+        "promovidos":2,
+        "coordinadores":1,
+        "casillas_catalogadas":2,
+        "promovidos_sin_casilla":1,
+        "casillas_resumen_html":"316 B: 1<br/>316 C1: 0<br/>Pendientes: 1",
+        "casillas_detalle_lista":[
+            {"clave":"316 B","promovidos":1,"coordinadores":1},
+            {"clave":"316 C1","promovidos":0,"coordinadores":0},
+        ],
+    }])
+    obj=build_geojson_with_metrics(metrics,[316])
+    props=obj["features"][0]["properties"]
+    assert props["promovidos"]==2
+    assert props["casillas_resumen_html"].startswith("316 B")
+    assert isinstance(props["casillas_detalle_lista"],list)
+    assert props["casillas_detalle_lista"][1]["promovidos"]==0

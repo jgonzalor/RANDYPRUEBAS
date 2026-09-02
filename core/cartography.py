@@ -152,6 +152,33 @@ def master_sections_dataframe() -> pd.DataFrame:
     return df.rename(columns={"seccion": "numero"})
 
 
+
+
+def _geojson_safe_value(value: Any):
+    """Convierte valores de DataFrame en propiedades GeoJSON seguras.
+
+    Evita evaluar ``pd.isna`` sobre listas/diccionarios, que devuelve arreglos
+    booleanos y puede provocar ``ValueError: truth value is ambiguous``.
+    """
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        return {str(k): _geojson_safe_value(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_geojson_safe_value(v) for v in value]
+    try:
+        missing = pd.isna(value)
+        if isinstance(missing, bool) and missing:
+            return None
+    except Exception:
+        pass
+    # Convertir escalares numpy/pandas cuando sea posible.
+    try:
+        return value.item()
+    except Exception:
+        return value
+
+
 def build_geojson_with_metrics(
     metrics: Optional[pd.DataFrame] = None,
     section_numbers: Optional[Iterable[Any]] = None,
@@ -169,7 +196,7 @@ def build_geojson_with_metrics(
                 key = str(int(float(row.get("numero"))))
             except Exception:
                 continue
-            metric_map[key] = {k: (None if pd.isna(v) else v) for k, v in row.to_dict().items()}
+            metric_map[key] = {k: _geojson_safe_value(v) for k, v in row.to_dict().items()}
 
     features = []
     for feat in base.get("features", []):
@@ -180,7 +207,7 @@ def build_geojson_with_metrics(
         op = metric_map.get(key, {})
         # Preservar atributos operativos derivados de la tabla de métricas para
         # que páginas como el mapa puedan enriquecer el tooltip con desgloses.
-        props.update({k: (None if pd.isna(v) else v) for k, v in op.items()})
+        props.update({k: _geojson_safe_value(v) for k, v in op.items()})
         props.update({
             "promovidos": int(op.get("promovidos") or 0),
             "coordinadores": int(op.get("coordinadores") or 0),
